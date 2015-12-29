@@ -146,15 +146,10 @@ def regOr(a, b):
 
 	returns: the resulting NFA
 	"""
-	start, end = State(), State()
+	a.inState.addConnection('e', b.inState)
+	b.outState.addConnection('e', a.outState)
 
-	start.addConnection('e', a.inState)
-	start.addConnection('e', b.inState)
-
-	a.outState.addConnection('e', end)
-	b.outState.addConnection('e', end)
-
-	return Nfa(start, end)
+	return Nfa(a.inState, a.outState)
 
 def regZeroOrMore(a):
 	"""
@@ -191,3 +186,5 @@ def regZeroOrOne(a):
 	a.inState.addConnection('e', a.outState)
 
 	return Nfa(a.inState, a.outState)
+
+print(regexToNfa('abc|,'))
