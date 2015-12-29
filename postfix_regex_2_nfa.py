@@ -180,5 +180,14 @@ def regOneOrMore(a):
 
 	return Nfa(a.inState, a.outState)
 
+def regZeroOrOne(a):
+	"""
+	converts an NFA into a zero-or-one NFA
 
-print(regexToNfa('a*'))
+	a: the input NFA
+
+	returns: the resulting NFA
+	"""
+	a.inState.addConnection('e', a.outState)
+
+	return Nfa(a.inState, a.outState)
