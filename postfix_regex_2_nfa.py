@@ -32,7 +32,7 @@ class State:
 	"""
 	def __init__(self):
 		"""
-		initializes the state with an empty set of connections.
+		initializes the state with an empty set of connections
 		"""
 		self.connections = []
 
@@ -90,12 +90,12 @@ def regexToNfa(postfixRegex):
 			op1 = regConcat(op1, op2)
 		elif char == '|':
 			op1 = regOr(op1, op2)
-		elif char == '+':
-			op1 = regOneOrMore(op1)
 		elif char == '*':
 			op1 = regZeroOrMore(op1)
+		elif char == '+':
+			op1 = regOneOrMore(op1)
 		elif char == '?':
-			op1 = regZeroOrOne(op1)		
+			op1 = regZeroOrOne(op1)
 
 		# Non-operator characters are converted to NFAs and are stored in 
 		# either op1 (for the first character encountered) or op2 (for all 
@@ -118,8 +118,8 @@ def regChar(a):
 
 	returns: the resulting NFA
 	"""
-	start = State()
-	end = State()
+	start, end = State(), State()
+
 	start.addConnection(a, end)
 
 	return Nfa(start, end)
@@ -146,11 +146,11 @@ def regOr(a, b):
 
 	returns: the resulting NFA
 	"""
-	start = State()
+	start, end = State(), State()
+
 	start.addConnection('e', a.inState)
 	start.addConnection('e', b.inState)
 
-	end = State()
 	a.outState.addConnection('e', end)
 	b.outState.addConnection('e', end)
 
@@ -158,20 +158,27 @@ def regOr(a, b):
 
 def regZeroOrMore(a):
 	"""
-	converts an NFA into a one-or-more NFA
+	converts an NFA into a zero-or-more NFA
 
 	a: the input NFA
 
 	returns: the resulting NFA
 	"""
-	start = State()
-	end = State()
+	a.outState.addConnection('e', a.inState)
 
-	start.addConnection('e', end)
-	start.addConnection('e', a.inState)
-	a.outState.addConnection('e', end)
-	a.outState.addConnection('e', start)
+	return Nfa(a.inState, a.inState)
 
-	return Nfa(start, end)
+def regOneOrMore(a):
+	"""
+	converts an NFA into a zero-or-more NFA
 
-print(regexToNfa('a*'))
+	a: the input NFA
+
+	returns: the resulting NFA
+	"""
+	a.outState.addConnection('e', a.inState)
+
+	return Nfa(a.inState, a.outState)
+
+
+print(regexToNfa('a'))
