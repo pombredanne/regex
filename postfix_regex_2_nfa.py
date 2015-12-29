@@ -78,36 +78,33 @@ def regexToNfa(postfixRegex):
 
 	returns: a corresponding NFA.
 	"""
-	# op1 holds the accumulated NFA, while op2 holds a secondary NFA for 
-	# binary operations.
-	op1 = None
-	op2 = None
+	# A stack of the computed sub-NFAs.
+	ops = []
 
 	for char in postfixRegex:
-		# Each operator is linked to a function which constructs the 
-		# appropriate NFA using op1 and op2 (in the case of binary operators).
+		# Each character is linked to a function which constructs the 
+		# appropriate NFA using the top element(s) of the stack.
 		if char == ',':
-			op1 = regConcat(op1, op2)
+			op2 = ops.pop()
+			op1 = ops.pop()
+			ops.append(regConcat(op1, op2))
 		elif char == '|':
-			op1 = regOr(op1, op2)
+			op2 = ops.pop()
+			op1 = ops.pop()
+			ops.append(regOr(op1, op2))
 		elif char == '*':
-			op1 = regZeroOrMore(op1)
+			op1 = ops.pop()
+			ops.append(regZeroOrMore(op1))
 		elif char == '+':
-			op1 = regOneOrMore(op1)
+			op1 = ops.pop()
+			ops.append(regOneOrMore(op1))
 		elif char == '?':
-			op1 = regZeroOrOne(op1)
-
-		# Non-operator characters are converted to NFAs and are stored in 
-		# either op1 (for the first character encountered) or op2 (for all 
-		# remaining characters).
+			op1 = ops.pop()
+			ops.append(regZeroOrOne(op1))
 		else:
-			automaton = regChar(char)
-			if not op1:
-				op1 = automaton
-			else:
-				op2 = automaton
+			ops.append(regChar(char))
 
-	return(op1)
+	return(ops.pop())
 
 
 def regChar(a):
