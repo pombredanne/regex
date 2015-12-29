@@ -170,7 +170,7 @@ def regZeroOrMore(a):
 
 def regOneOrMore(a):
 	"""
-	converts an NFA into a zero-or-more NFA
+	converts an NFA into a one-or-more NFA
 
 	a: the input NFA
 
@@ -181,4 +181,4 @@ def regOneOrMore(a):
 	return Nfa(a.inState, a.outState)
 
 
-print(regexToNfa('a'))
+print(regexToNfa('a*'))
