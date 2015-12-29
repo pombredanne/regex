@@ -47,20 +47,25 @@ class State:
 		"""
 		self.connections.append((value, state))
 
-	def __repr__(self, level = 0):
+	def __repr__(self, level = 0, visited = []):
 		"""
 		prints the id of the current state, then recursively prints its 
 		connections, its connections' connections, etc.
 
 		level: determines the offset for each level of the printed NFA
+		visited: tracks the printed states, so that states' connections are 
+			not printed twice
 		"""
 		offset = "  " * level
 		rep = offset + str(id(self)) + "\n"
 
-		for (value, state) in self.connections:
-			# The id of each state will be indented based on its distance from 
-			# the initial state.
-			rep += value + state.__repr__(level + 1)
+		if id(self) not in visited:
+			# We add the id of the state to the list of visited states.
+			visited.append(id(self))
+			for (value, state) in self.connections:
+				# The id of each state will be indented based on its distance from 
+				# the initial state.
+				rep += value + state.__repr__(level + 1, visited)
 
 		return rep
 
@@ -150,3 +155,23 @@ def regOr(a, b):
 	b.outState.addConnection('e', end)
 
 	return Nfa(start, end)
+
+def regZeroOrMore(a):
+	"""
+	converts an NFA into a one-or-more NFA
+
+	a: the input NFA
+
+	returns: the resulting NFA
+	"""
+	start = State()
+	end = State()
+
+	start.addConnection('e', end)
+	start.addConnection('e', a.inState)
+	a.outState.addConnection('e', end)
+	a.outState.addConnection('e', start)
+
+	return Nfa(start, end)
+
+print(regexToNfa('a*'))
