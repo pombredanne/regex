@@ -44,15 +44,19 @@ class Regex:
 				ops.append((aIn, aIn))
 
 			elif char == '+':
-				op1 = ops.pop()
-				ops.append(regOneOrMore(op1))
+				(aIn, aOut) = ops.pop()
+				aOut.addConnection('ε', aIn)
+				ops.append((aIn, aOut))
 
 			elif char == '?':
-				op1 = ops.pop()
-				ops.append(regZeroOrOne(op1))
+				(aIn, aOut) = ops.pop()
+				aIn.addConnection('ε', aOut)
+				ops.append((aIn, aOut))
 
 			else:
-				ops.append(regChar(char))
+				start, end = State(), State()
+				start.addConnection(char, end)
+				ops.append((start, end))
 
 		self.inState, _ = ops.pop()
 		self.outStates = self._removeEpsilonConnections()
@@ -197,45 +201,6 @@ class State:
 		visited[:] = []
 
 		return rep
-
-
-def regChar(char):
-	"""
-	converts a non-operator character into an NFA
-
-	a: the input character
-
-	returns: the resulting NFA
-	"""
-	start, end = State(), State()
-
-	start.addConnection(char, end)
-
-	return (start, end)
-
-def regOneOrMore((aIn, aOut)):
-	"""
-	converts an NFA into a one-or-more NFA
-
-	a: the input NFA
-
-	returns: the resulting NFA
-	"""
-	aOut.addConnection('ε', aIn)
-
-	return (aIn, aOut)
-
-def regZeroOrOne((aIn, aOut)):
-	"""
-	converts an NFA into a zero-or-one NFA
-
-	a: the input NFA
-
-	returns: the resulting NFA
-	"""
-	aIn.addConnection('ε', aOut)
-
-	return (aIn, aOut)
 
 
 # Tests
