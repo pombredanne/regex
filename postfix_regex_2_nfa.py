@@ -114,6 +114,9 @@ class State:
 				# the initial state.
 				rep += value + state.__repr__(level + 1, visited)
 
+		# We clear the visited list for future function calls.
+		visited[:] = []
+
 		return rep
 
 
@@ -153,6 +156,25 @@ def regexToNfa(postfixRegex):
 
 	return(ops.pop())
 
+def removeEpsilonConnections(nfa):
+
+	statesToTraverse = [nfa.inState]
+
+	for currentState in statesToTraverse:
+		eClosure, newConnections = [currentState], []
+		for state in eClosure:
+			for (value, connectedState) in state.connections:
+				if value == 'e':
+					if connectedState not in eClosure:
+						eClosure.append(connectedState)
+				else:
+					newConnections.append((value, connectedState))
+					if connectedState not in statesToTraverse:
+						statesToTraverse.append(connectedState)
+
+		currentState.connections = newConnections
+
+	return statesToTraverse[0]
 
 def regChar(a):
 	"""
@@ -231,5 +253,14 @@ def regZeroOrOne(a):
 
 	return Nfa(a.inState, a.outState)
 
-nfa = regexToNfa('ab|c*,d,')
-print(nfa.match('bcccd'))
+nfa = regexToNfa('ab|c*&d&')
+print(nfa.match('acccd')[0]==True)
+print(nfa.match('bcccd')[0]==True)
+print(nfa.match('a')[0]==False)
+print(nfa.match('ad')[0]==True)
+print(nfa.match('ab')[0]==False)
+
+# nfa = regexToNfa('ab&c|')
+# print(nfa)
+# out = removeEpsilonConnections(nfa)
+# print(out)
