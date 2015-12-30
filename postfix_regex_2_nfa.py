@@ -1,4 +1,4 @@
-# Converts postfix regexes to nondeterministic finite automata.
+# Converts postfix regex strings into regexes.
 
 
 class Regex:
@@ -241,9 +241,14 @@ def regZeroOrOne((aIn, aOut)):
 
 	return (aIn, aOut)
 
-nfa = Regex('ab|c*&d&')
-print(nfa.match('acccd')[0]==True)
-print(nfa.match('bcccd')[0]==True)
-print(nfa.match('a')[0]==False)
-print(nfa.match('ad')[0]==True)
-print(nfa.match('ab')[0]==False)
+# Tests
+regex = Regex('ab|c*&d&')
+tests = [regex.match('acccd')[0]==True,
+		regex.match('bcccd')[0]==True,
+		regex.match('a')[0]==False,
+		regex.match('ad')[0]==True,
+		regex.match('ab')[0]==False]
+if all(tests):
+	print("Tests pass")
+else:
+	print("Tests fail")
