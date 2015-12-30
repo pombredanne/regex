@@ -131,7 +131,7 @@ def regexToNfa(postfixRegex):
 	for char in postfixRegex:
 		# Each character is linked to a function which constructs the 
 		# appropriate NFA using the top element(s) of the stack.
-		if char == ',':
+		if char == '&':
 			op2 = ops.pop()
 			op1 = ops.pop()
 			ops.append(regConcat(op1, op2))

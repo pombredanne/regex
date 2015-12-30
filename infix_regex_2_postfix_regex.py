@@ -1,9 +1,5 @@
 # Converts normal regexes to postfix notation.
 
-# To create postfix regexes, we need a postfix concatenation operator. We 
-# choose to use the comma, since it has no special regex meaning.
-CONCAT_SYMBOL = ','
-
 
 def regexInfixToPostfix(infixRegex):
 	"""
@@ -19,7 +15,7 @@ def regexInfixToPostfix(infixRegex):
 
 	for i, char in enumerate(infixRegex):
 
-		if char in ['|', CONCAT_SYMBOL]:
+		if char in ['|', '&']:
 			# If the operator stack is not empty and we encounter a new binary 
 			# operator, we push the existing binary operator into the queue 
 			# first, unless the existing operator is a left-bracket, which we 
@@ -76,7 +72,7 @@ def regexAddConcatOps(noConcatRegex):
 		if (char not in ['(', '|'] and i + 1 < len(noConcatRegex) and 
 		  noConcatRegex[i+1] not in ['*','+','?',')','|']):
 
-			withConcatList.append(CONCAT_SYMBOL)
+			withConcatList.append('&')
 
 	withConcatRegex = ''.join(withConcatList)
 
@@ -85,7 +81,7 @@ def regexAddConcatOps(noConcatRegex):
 
 # Tests
 testRegexIn = "a?bc|(d|e+)f"
-testRegexOut = "a?b,c,de+||f,"
+testRegexOut = "a?b&c&de+||f&"
 
 if(regexInfixToPostfix(regexAddConcatOps(testRegexIn))==testRegexOut):
 	print("Tests pass")
