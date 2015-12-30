@@ -26,22 +26,31 @@ class Regex:
 			# element(s) of the stack to return the appropriate input/output 
 			# pair.
 			if char == '&':
-				op2 = ops.pop()
-				op1 = ops.pop()
-				ops.append(regConcat(op1, op2))
+				(bIn, bOut), (aIn, aOut) = ops.pop(), ops.pop()
+				aOut.addConnection('ε', bIn)
+				ops.append((aIn, bOut))
+
 			elif char == '|':
-				op2 = ops.pop()
-				op1 = ops.pop()
-				ops.append(regOr(op1, op2))
+				(bIn, bOut), (aIn, aOut) = ops.pop(), ops.pop()
+				aIn.addConnection('ε', bIn)
+				bOut.addConnection('ε', aOut)
+				ops.append((aIn, aOut))
+
 			elif char == '*':
-				op1 = ops.pop()
-				ops.append(regZeroOrMore(op1))
+				(aIn, aOut) = ops.pop()
+
+				aOut.addConnection('ε', aIn)
+
+				ops.append((aIn, aIn))
+
 			elif char == '+':
 				op1 = ops.pop()
 				ops.append(regOneOrMore(op1))
+
 			elif char == '?':
 				op1 = ops.pop()
 				ops.append(regZeroOrOne(op1))
+
 			else:
 				ops.append(regChar(char))
 
@@ -203,45 +212,6 @@ def regChar(char):
 	start.addConnection(char, end)
 
 	return (start, end)
-
-def regConcat((aIn, aOut), (bIn, bOut)):
-	"""
-	combines two NFAs into a single concatenated NFA
-
-	a: the first NFA
-	b: the second NFA
-
-	returns: the resulting NFA
-	"""
-	aOut.addConnection('ε', bIn)
-
-	return (aIn, bOut)
-
-def regOr((aIn, aOut), (bIn, bOut)):
-	"""
-	combines two NFAs into a single either/or NFA
-
-	a: the first NFA
-	b: the second NFA
-
-	returns: the resulting NFA
-	"""
-	aIn.addConnection('ε', bIn)
-	bOut.addConnection('ε', aOut)
-
-	return (aIn, aOut)
-
-def regZeroOrMore((aIn, aOut)):
-	"""
-	converts an NFA into a zero-or-more NFA
-
-	a: the input NFA
-
-	returns: the resulting NFA
-	"""
-	aOut.addConnection('ε', aIn)
-
-	return (aIn, aIn)
 
 def regOneOrMore((aIn, aOut)):
 	"""
