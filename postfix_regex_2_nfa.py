@@ -10,6 +10,7 @@ class Regex:
 	black box around a set of connected states, exposing only the input state 
 	and the output states used to match strings.
 	"""
+
 	def __init__(self, postfixRegex):
 		"""
 		creates a regex based on a regex string in postfix notation
@@ -44,13 +45,54 @@ class Regex:
 			else:
 				ops.append(regChar(char))
 
-		self.inState, self.outStates = ops.pop()
+		self.inState, _ = ops.pop()
+		self.outStates = self._removeEpsilonConnections()
+
 
 	def __repr__(self):
 		"""
 		prints the input state, which will recursively print the other states.
 		"""
 		return str(self.inState)
+
+
+	def _removeEpsilonConnections(self):
+		"""
+		from an NFAs start state, moves through the network removing all epsilon 
+			connections
+
+		startState: the start-state for the NFA
+
+		returns: a list of end-states for the pruned NFA
+		"""
+		statesToTraverse, outStates = [self.inState], set()
+
+		for currentState in statesToTraverse:
+			# An ε-closure is the set of all the states reachable via ε-
+			# connections of the current state. The new connections are all the 
+			# external connections of the ε-closure.
+			eClosure, newConnections = [currentState], set()
+			for state in eClosure:
+				for (value, connectedState) in state.connections:
+					# If a connection is an ε-connection, we add it to the ε-
+					# closure.
+					if value == 'ε':
+						eClosure.append(connectedState)
+					# Otherwise, we add it to the set of new connections, and to 
+					# the list of states to traverse (if not already present).
+					else:
+						newConnections.add((value, connectedState))
+						if connectedState not in statesToTraverse:
+							statesToTraverse.append(connectedState)
+
+			# If a state's ε-closure has no external connections, that means that 
+			# it's an end-state.
+			if not newConnections:
+				outStates.add(currentState)
+			currentState.connections = newConnections
+
+		return outStates
+
 
 	def match(self, string):
 		"""
@@ -89,7 +131,7 @@ class Regex:
 		# the regex, we end up at either the out-state or a state connected to 
 		# the out-state by an epsilon connection.
 		for state in currentStates:
-			if state == self.outStates:
+			if state in self.outStates:
 				match = True
 				# One state being the out-state is enough.
 				break
@@ -109,7 +151,7 @@ class State:
 		"""
 		initializes the state with an empty set of connections
 		"""
-		self.connections = []
+		self.connections = set()
 
 	def addConnection(self, value, state):
 		"""
@@ -120,7 +162,7 @@ class State:
 
 		returns: void
 		"""
-		self.connections.append((value, state))
+		self.connections.add((value, state))
 
 	def __repr__(self, level = 0, visited = []):
 		"""
@@ -147,25 +189,6 @@ class State:
 
 		return rep
 
-def removeEpsilonConnections(inState):
-
-	statesToTraverse, outStates = [inState], []
-
-	for currentState in statesToTraverse:
-		eClosure, newConnections = [currentState], []
-		for state in eClosure:
-			for (value, connectedState) in state.connections:
-				if value == 'ε':
-					eClosure.append(connectedState)
-				else:
-					newConnections.append((value, connectedState))
-					statesToTraverse.append(connectedState)
-
-		if not newConnections:
-			outStates.append(currentState)
-		currentState.connections = newConnections
-
-	return statesToTraverse[0], outStates
 
 def regChar(char):
 	"""
@@ -246,13 +269,21 @@ def regZeroOrOne((aIn, aOut)):
 
 
 # Tests
-regex = Regex('ab|c*&d&')
-tests = [regex.match('acccd')[0]==True,
-		regex.match('bcccd')[0]==True,
-		regex.match('a')[0]==False,
-		regex.match('ad')[0]==True,
-		regex.match('ab')[0]==False]
+regex1 = Regex('ab|c*&d&')
+regex2 = Regex('ad|c|')
+tests = [regex1.match('acccd')[0]==True,
+		regex1.match('bcccd')[0]==True,
+		regex1.match('a')[0]==False,
+		regex1.match('ad')[0]==True,
+		regex1.match('ab')[0]==False,
+		regex2.match('a')[0]==True,
+		regex2.match('d')[0]==True,
+		regex2.match('c')[0]==True,
+		regex2.match('ad')[0]==False,
+		regex2.match('dc')[0]==False]
 if all(tests):
 	print("Tests pass")
 else:
 	print("Tests fail")
+
+
