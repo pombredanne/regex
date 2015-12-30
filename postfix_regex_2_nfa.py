@@ -241,6 +241,7 @@ def regZeroOrOne((aIn, aOut)):
 
 	return (aIn, aOut)
 
+
 # Tests
 regex = Regex('ab|c*&d&')
 tests = [regex.match('acccd')[0]==True,

@@ -1,4 +1,4 @@
-# Converts normal regexes to postfix notation.
+# Converts normal regex strings to postfix notation.
 
 
 def regexInfixToPostfix(infixRegex):
