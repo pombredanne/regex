@@ -6,7 +6,7 @@ class Nfa:
 	a nondeterministic finite automaton. Takes the form of a black box around 
 	a set of connected states, exposing only the input state (so that 
 	expressions can be parsed and NFAs can be linked) and the output state 
-	(again, so that NFAs can be linked).
+	(so that NFAs can be linked and the accepting state can be determined).
 	"""
 	def __init__(self, inState, outState):
 		"""
@@ -23,6 +23,53 @@ class Nfa:
 		prints the input state, which will recursively print the other states.
 		"""
 		return str(self.inState)
+
+	def match(self, string):
+		"""
+		determines whether a string matches the regex implemented by the NFA, 
+			and the amount of characters it consumes 
+
+		string: the string to match
+
+		returns: 
+			1. whether a match occured
+			2. the number of characters consumed
+		"""
+		match, munch, currentStates = False, 0, [self.inState]
+
+		# The process the string character-by-character.
+		for i, char in enumerate(string):
+			newStates = []
+
+			for state in currentStates:
+				for (value, connectedState) in state.connections:
+					# If we find a connection whose value is the current 
+					# character, we set the munch and add the connected state 
+					# to the set of states to explore for the next character.
+					if value == char:
+						munch = i + 1
+						newStates.append(connectedState)
+					# If we find a connection whose value is epsilon, we add 
+					# the connected state to the set of states to explore for 
+					# this character.
+					elif value == 'e':
+						currentStates.append(connectedState)
+								
+			currentStates = newStates
+
+		# There is a match if, after stepping through all the characters in 
+		# the regex, we end up at either the out-state or a state connected to 
+		# the out-state by an epsilon connection.
+		for state in currentStates:
+			if state == self.outState:
+				match = True
+				# One state being the out-state is enough.
+				break
+			for (value, connectedState) in state.connections:
+				if value == 'e':
+					currentStates.append(connectedState)
+
+		return match, munch
 
 
 class State:
@@ -184,4 +231,5 @@ def regZeroOrOne(a):
 
 	return Nfa(a.inState, a.outState)
 
-print(regexToNfa('abc|,'))
+nfa = regexToNfa('ab|c*,d,')
+print(nfa.match('bcccd'))
