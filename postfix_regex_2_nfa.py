@@ -1,22 +1,47 @@
 # Converts postfix regexes to nondeterministic finite automata.
 
 
-class Nfa:
+class Regex:
 	"""
-	a nondeterministic finite automaton. Takes the form of a black box around 
-	a set of connected states, exposing only the input state (so that 
-	expressions can be parsed and NFAs can be linked) and the output state 
-	(so that NFAs can be linked and the accepting state can be determined).
+	a regex based on a nondeterministic finite automaton. Takes the form of a 
+	black box around a set of connected states, exposing only the input state 
+	and the output states used to match strings.
 	"""
-	def __init__(self, inState, outState):
+	def __init__(self, postfixRegex):
 		"""
-		initializes the NFA with empty input and output states.
+		creates a regex based on a regex string in postfix notation
 
-		inState: the NFA's input state
-		outState: the NFA's output state
+		postfixRegex: the regex string in postfix notation
 		"""
-		self.inState = inState
-		self.outState = outState
+		# A stack of pairs of states, representing the input and output states 
+		# of notional NFAs.
+		ops = []
+
+		for char in postfixRegex:
+			# Each character is linked to a function which uses the top 
+			# element(s) of the stack to return the appropriate input/output 
+			# pair.
+			if char == '&':
+				op2 = ops.pop()
+				op1 = ops.pop()
+				ops.append(regConcat(op1, op2))
+			elif char == '|':
+				op2 = ops.pop()
+				op1 = ops.pop()
+				ops.append(regOr(op1, op2))
+			elif char == '*':
+				op1 = ops.pop()
+				ops.append(regZeroOrMore(op1))
+			elif char == '+':
+				op1 = ops.pop()
+				ops.append(regOneOrMore(op1))
+			elif char == '?':
+				op1 = ops.pop()
+				ops.append(regZeroOrOne(op1))
+			else:
+				ops.append(regChar(char))
+
+		self.inState, self.outStates = ops.pop()
 
 	def __repr__(self):
 		"""
@@ -26,8 +51,8 @@ class Nfa:
 
 	def match(self, string):
 		"""
-		determines whether a string matches the regex implemented by the NFA, 
-			and the amount of characters it consumes 
+		determines whether the regex matches the input string, and the amount 
+			of characters it consumes 
 
 		string: the string to match
 
@@ -52,7 +77,7 @@ class Nfa:
 					# If we find a connection whose value is epsilon, we add 
 					# the connected state to the set of states to explore for 
 					# this character.
-					elif value == 'e':
+					elif value == None:
 						currentStates.append(connectedState)
 								
 			currentStates = newStates
@@ -61,12 +86,12 @@ class Nfa:
 		# the regex, we end up at either the out-state or a state connected to 
 		# the out-state by an epsilon connection.
 		for state in currentStates:
-			if state == self.outState:
+			if state == self.outStates:
 				match = True
 				# One state being the out-state is enough.
 				break
 			for (value, connectedState) in state.connections:
-				if value == 'e':
+				if value == None:
 					currentStates.append(connectedState)
 
 		return match, munch
@@ -75,7 +100,7 @@ class Nfa:
 class State:
 	"""
 	a state of a nondeterministic finite automaton. Holds connections to other 
-	states.
+	states
 	"""
 	def __init__(self):
 		"""
@@ -119,43 +144,6 @@ class State:
 
 		return rep
 
-
-def regexToNfa(postfixRegex):
-	"""
-	Converts a postfix regex into an NFA.
-
-	postfixRegex: the regex to convert
-
-	returns: a corresponding NFA.
-	"""
-	# A stack of the computed sub-NFAs.
-	ops = []
-
-	for char in postfixRegex:
-		# Each character is linked to a function which constructs the 
-		# appropriate NFA using the top element(s) of the stack.
-		if char == '&':
-			op2 = ops.pop()
-			op1 = ops.pop()
-			ops.append(regConcat(op1, op2))
-		elif char == '|':
-			op2 = ops.pop()
-			op1 = ops.pop()
-			ops.append(regOr(op1, op2))
-		elif char == '*':
-			op1 = ops.pop()
-			ops.append(regZeroOrMore(op1))
-		elif char == '+':
-			op1 = ops.pop()
-			ops.append(regOneOrMore(op1))
-		elif char == '?':
-			op1 = ops.pop()
-			ops.append(regZeroOrOne(op1))
-		else:
-			ops.append(regChar(char))
-
-	return(ops.pop())
-
 def removeEpsilonConnections(nfa):
 
 	statesToTraverse = [nfa.inState]
@@ -164,7 +152,7 @@ def removeEpsilonConnections(nfa):
 		eClosure, newConnections = [currentState], []
 		for state in eClosure:
 			for (value, connectedState) in state.connections:
-				if value == 'e':
+				if value == None:
 					if connectedState not in eClosure:
 						eClosure.append(connectedState)
 				else:
@@ -176,7 +164,7 @@ def removeEpsilonConnections(nfa):
 
 	return statesToTraverse[0]
 
-def regChar(a):
+def regChar(char):
 	"""
 	converts a non-operator character into an NFA
 
@@ -186,11 +174,11 @@ def regChar(a):
 	"""
 	start, end = State(), State()
 
-	start.addConnection(a, end)
+	start.addConnection(char, end)
 
-	return Nfa(start, end)
+	return (start, end)
 
-def regConcat(a, b):
+def regConcat((aIn, aOut), (bIn, bOut)):
 	"""
 	combines two NFAs into a single concatenated NFA
 
@@ -199,11 +187,11 @@ def regConcat(a, b):
 
 	returns: the resulting NFA
 	"""
-	a.outState.addConnection('e', b.inState)
+	aOut.addConnection(None, bIn)
 
-	return Nfa(a.inState, b.outState)
+	return (aIn, bOut)
 
-def regOr(a, b):
+def regOr((aIn, aOut), (bIn, bOut)):
 	"""
 	combines two NFAs into a single either/or NFA
 
@@ -212,12 +200,12 @@ def regOr(a, b):
 
 	returns: the resulting NFA
 	"""
-	a.inState.addConnection('e', b.inState)
-	b.outState.addConnection('e', a.outState)
+	aIn.addConnection(None, bIn)
+	bOut.addConnection(None, aOut)
 
-	return Nfa(a.inState, a.outState)
+	return (aIn, aOut)
 
-def regZeroOrMore(a):
+def regZeroOrMore((aIn, aOut)):
 	"""
 	converts an NFA into a zero-or-more NFA
 
@@ -225,11 +213,11 @@ def regZeroOrMore(a):
 
 	returns: the resulting NFA
 	"""
-	a.outState.addConnection('e', a.inState)
+	aOut.addConnection(None, aIn)
 
-	return Nfa(a.inState, a.inState)
+	return (aIn, aIn)
 
-def regOneOrMore(a):
+def regOneOrMore((aIn, aOut)):
 	"""
 	converts an NFA into a one-or-more NFA
 
@@ -237,11 +225,11 @@ def regOneOrMore(a):
 
 	returns: the resulting NFA
 	"""
-	a.outState.addConnection('e', a.inState)
+	aOut.addConnection(None, aIn)
 
-	return Nfa(a.inState, a.outState)
+	return (aIn, aOut)
 
-def regZeroOrOne(a):
+def regZeroOrOne((aIn, aOut)):
 	"""
 	converts an NFA into a zero-or-one NFA
 
@@ -249,18 +237,13 @@ def regZeroOrOne(a):
 
 	returns: the resulting NFA
 	"""
-	a.inState.addConnection('e', a.outState)
+	aIn.addConnection(None, aOut)
 
-	return Nfa(a.inState, a.outState)
+	return (aIn, aOut)
 
-nfa = regexToNfa('ab|c*&d&')
+nfa = Regex('ab|c*&d&')
 print(nfa.match('acccd')[0]==True)
 print(nfa.match('bcccd')[0]==True)
 print(nfa.match('a')[0]==False)
 print(nfa.match('ad')[0]==True)
 print(nfa.match('ab')[0]==False)
-
-# nfa = regexToNfa('ab&c|')
-# print(nfa)
-# out = removeEpsilonConnections(nfa)
-# print(out)
