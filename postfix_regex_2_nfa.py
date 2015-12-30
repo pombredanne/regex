@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # Converts postfix regex strings into regexes.
 
 
@@ -77,7 +80,7 @@ class Regex:
 					# If we find a connection whose value is epsilon, we add 
 					# the connected state to the set of states to explore for 
 					# this character.
-					elif value == None:
+					elif value == 'ε':
 						currentStates.append(connectedState)
 								
 			currentStates = newStates
@@ -91,7 +94,7 @@ class Regex:
 				# One state being the out-state is enough.
 				break
 			for (value, connectedState) in state.connections:
-				if value == None:
+				if value == 'ε':
 					currentStates.append(connectedState)
 
 		return match, munch
@@ -144,25 +147,25 @@ class State:
 
 		return rep
 
-def removeEpsilonConnections(nfa):
+def removeEpsilonConnections(inState):
 
-	statesToTraverse = [nfa.inState]
+	statesToTraverse, outStates = [inState], []
 
 	for currentState in statesToTraverse:
 		eClosure, newConnections = [currentState], []
 		for state in eClosure:
 			for (value, connectedState) in state.connections:
-				if value == None:
-					if connectedState not in eClosure:
-						eClosure.append(connectedState)
+				if value == 'ε':
+					eClosure.append(connectedState)
 				else:
 					newConnections.append((value, connectedState))
-					if connectedState not in statesToTraverse:
-						statesToTraverse.append(connectedState)
+					statesToTraverse.append(connectedState)
 
+		if not newConnections:
+			outStates.append(currentState)
 		currentState.connections = newConnections
 
-	return statesToTraverse[0]
+	return statesToTraverse[0], outStates
 
 def regChar(char):
 	"""
@@ -187,7 +190,7 @@ def regConcat((aIn, aOut), (bIn, bOut)):
 
 	returns: the resulting NFA
 	"""
-	aOut.addConnection(None, bIn)
+	aOut.addConnection('ε', bIn)
 
 	return (aIn, bOut)
 
@@ -200,8 +203,8 @@ def regOr((aIn, aOut), (bIn, bOut)):
 
 	returns: the resulting NFA
 	"""
-	aIn.addConnection(None, bIn)
-	bOut.addConnection(None, aOut)
+	aIn.addConnection('ε', bIn)
+	bOut.addConnection('ε', aOut)
 
 	return (aIn, aOut)
 
@@ -213,7 +216,7 @@ def regZeroOrMore((aIn, aOut)):
 
 	returns: the resulting NFA
 	"""
-	aOut.addConnection(None, aIn)
+	aOut.addConnection('ε', aIn)
 
 	return (aIn, aIn)
 
@@ -225,7 +228,7 @@ def regOneOrMore((aIn, aOut)):
 
 	returns: the resulting NFA
 	"""
-	aOut.addConnection(None, aIn)
+	aOut.addConnection('ε', aIn)
 
 	return (aIn, aOut)
 
@@ -237,7 +240,7 @@ def regZeroOrOne((aIn, aOut)):
 
 	returns: the resulting NFA
 	"""
-	aIn.addConnection(None, aOut)
+	aIn.addConnection('ε', aOut)
 
 	return (aIn, aOut)
 
